@@ -1,6 +1,4 @@
 package detector
-
-import exception.SpamDetectedException
 import kotlinx.coroutines.*
 import processor.LetterProcessor
 import java.util.concurrent.atomic.AtomicBoolean
@@ -28,43 +26,34 @@ class ConcurrentSpamDetector(
      * @param text to process
      * @return deferred true if spam detected otherwise deferred false
      */
+
     override suspend fun detectAsync(text: String): Deferred<Boolean> {
         return scope.async {
             val parts = splitTextIntoParts(text)
 
-            // Use AtomicBoolean to track if spam is detected in any part
             val spamDetected = AtomicBoolean(false)
 
-            // Create a list of Deferred<Boolean> to hold the results of spam detection for each part
             val deferredResults = parts.map { part ->
                 async {
                     val isSpam = spamDetector.detectAsync(part).await()
                     if (isSpam) {
-                        // Set spamDetected to true if spam is detected in any part
                         spamDetected.set(true)
+                        coroutineContext.cancelChildren()
                     }
                     isSpam
                 }
             }
+            val results = deferredResults.awaitAll()
 
-            // Wait for all parts to be processed
-            deferredResults.awaitAll()
-
-            // If spam was detected in any part, throw SpamDetectedException
             if (spamDetected.get()) {
-                throw SpamDetectedException()
+//                throw SpamDetectedException()
             }
-
-            // No spam detected in any part
-            false
+            results.all { it == false }
         }
     }
 
     private fun splitTextIntoParts(text: String): List<String> {
-        // Implement your logic to split the text into parts here
-        // You can use letterProcessor or any other method suitable for your use case
-        // For example, splitting by whitespace:
-        return text.split("\\s+".toRegex())
+        return letterProcessor.splitLetter(text)
     }
 }
 
