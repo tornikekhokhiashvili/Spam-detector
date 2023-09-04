@@ -1,4 +1,5 @@
 package detector
+import exception.SpamDetectedException
 import kotlinx.coroutines.*
 import processor.LetterProcessor
 import java.util.concurrent.atomic.AtomicBoolean
@@ -38,19 +39,22 @@ class ConcurrentSpamDetector(
                     val isSpam = spamDetector.detectAsync(part).await()
                     if (isSpam) {
                         spamDetected.set(true)
-                        coroutineContext.cancelChildren()
                     }
                     isSpam
                 }
             }
-            val results = deferredResults.awaitAll()
+
+            deferredResults.awaitAll() // Wait for all parts to be processed
 
             if (spamDetected.get()) {
-//                throw SpamDetectedException()
+                throw SpamDetectedException()
             }
-            results.all { it == false }
+
+            // No spam detected in any part
+            false
         }
     }
+
 
     private fun splitTextIntoParts(text: String): List<String> {
         return letterProcessor.splitLetter(text)
