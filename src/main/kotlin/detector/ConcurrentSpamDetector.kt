@@ -1,8 +1,6 @@
 package detector
-import exception.SpamDetectedException
 import kotlinx.coroutines.*
 import processor.LetterProcessor
-import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -19,7 +17,6 @@ class ConcurrentSpamDetector(
     private val spamDetector: SpamDetector,
     private val scope: CoroutineScope = GlobalScope
 ) : SpamDetector {
-
     /**
      * Perform concurrent spam detection. Text will be split by `letterProcessor` on the parts.
      * Each part is processed by the `spamDetector` object.
@@ -30,37 +27,12 @@ class ConcurrentSpamDetector(
 
     override suspend fun detectAsync(text: String): Deferred<Boolean> {
         return scope.async {
-            val parts = splitTextIntoParts(text)
-
-            val spamDetected = AtomicBoolean(false)
-
-            val deferredResults = parts.map { part ->
-                async {
-                    val isSpam = spamDetector.detectAsync(part).await()
-                    if (isSpam) {
-                        spamDetected.set(true)
-                    }
-                    isSpam
-                }
+           letterProcessor.splitLetter(text).any {
+                spamDetector.detectAsync(it).await()
             }
-
-            deferredResults.awaitAll() // Wait for all parts to be processed
-
-            if (spamDetected.get()) {
-                throw SpamDetectedException()
-            }
-
-            // No spam detected in any part
-            false
         }
     }
-
-
-    private fun splitTextIntoParts(text: String): List<String> {
-        return letterProcessor.splitLetter(text)
-    }
 }
-
 
 
 

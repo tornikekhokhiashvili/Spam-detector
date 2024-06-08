@@ -1,7 +1,7 @@
 package detector
 
 import kotlinx.coroutines.*
-import java.util.concurrent.atomic.AtomicBoolean
+
 
 /**
  * Word specific spam detector takes markers that is usually words from spam letter.
@@ -29,23 +29,12 @@ class WordSpecificSearchSpamDetector(
      */
     override suspend fun detectAsync(text: String): Deferred<Boolean> {
         return scope.async {
-            val spamDetected = AtomicBoolean(false)
-
-            // Calculate the delay based on the text size
             val delay = text.length * DELAY_PER_SYMBOL
-
-            // Simulate asynchronous processing with delay
-            delay(delay)
-
-            // Check if any of the spam markers are present in the text (case-insensitive)
-            for (marker in spamMarkers) {
-                if (text.contains(marker, ignoreCase = true)) {
-                    spamDetected.set(true)
-                    break // Exit early if a spam marker is found
-                }
+            val containsSpam = spamMarkers.any {
+                text.toLowerCase().contains(it)
             }
-
-            spamDetected.get()
+            delay(delay)
+            containsSpam
         }
     }
 

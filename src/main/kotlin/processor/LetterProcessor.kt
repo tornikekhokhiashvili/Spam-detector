@@ -13,15 +13,8 @@ class LetterProcessor(private val chunkSize: Int = CHUNK_SIZE) {
      * @return list of parts of the original text.
      */
     fun splitLetter(content: String) : List<String> {
-        val lines = content.lines()
-        val parts = mutableListOf<String>()
-        for (i in 0 until lines.size step chunkSize) {
-            val endIndex = minOf(i + chunkSize, lines.size)
-            val partLines = lines.subList(i, endIndex)
-            parts.add(partLines.joinToString("\n"))
-        }
-
-        return parts
+        val line=content.lines()
+        return line.chunked(chunkSize){it.joinToString(System.lineSeparator())}
     }
 
     companion object {
